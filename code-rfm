@@ -1,0 +1,30 @@
+WITH rfm_base AS (
+    SELECT 
+        khach,
+        MAX(thoi_gian) AS last_purchase,
+        DATEDIFF('2025-09-30', MAX(thoi_gian)) AS Recency,
+        COUNT(DISTINCT ma_hoa_don) AS Frequency,
+        SUM(doanh_thu) AS Monetary
+    FROM bang
+    GROUP BY khach
+),
+
+rfm_score AS (
+    SELECT
+        *,
+        NTILE(5) OVER (ORDER BY Recency DESC) AS R_score,
+        NTILE(5) OVER (ORDER BY Frequency ) AS F_score,
+        NTILE(5) OVER (ORDER BY Monetary ) AS M_score
+    FROM rfm_base
+)
+
+SELECT
+    *,
+    CASE
+        WHEN R_score >=4 AND F_score >=4 AND M_score >=4 THEN 'VIP'
+        WHEN R_score >=3 AND F_score >=3 THEN 'trung_thanh'
+        WHEN R_score <=2 AND F_score >=3 THEN 'roi_bo'
+        ELSE 'Khac'
+    END AS Customer_segment
+FROM rfm_score
+ORDER BY Monetary DESC;
